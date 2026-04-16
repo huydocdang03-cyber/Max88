@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bầu Cua VIP</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:url("https://i.imgur.com/3ZQ3Z6K.jpg") center/cover no-repeat;
+color:white;
+}
+
+/* LOGIN */
+#login{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:rgba(0,0,0,0.7);
+}
+
+.login-box{
+background:rgba(0,0,0,0.8);
+padding:30px;
+border-radius:15px;
+text-align:center;
+}
+
+input{
+padding:10px;
+margin:5px;
+border-radius:5px;
+border:none;
+}
+
+button{
+padding:10px 15px;
+border:none;
+border-radius:5px;
+background:gold;
+cursor:pointer;
+}
+
+/* GAME */
+#game{display:none;padding:10px;}
+
+.panel{
+background:rgba(0,0,0,0.7);
+padding:10px;
+margin:10px 0;
+border-radius:10px;
+}
+
+#board{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+}
+
+.cell{
+background:rgba(255,255,255,0.1);
+padding:20px;
+text-align:center;
+border-radius:10px;
+cursor:pointer;
+}
+
+.cell:hover{background:rgba(255,255,255,0.2);}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+<div class="login-box">
+<h2>🎲 Bầu Cua VIP</h2>
+<input id="username" placeholder="Username"><br>
+<input id="password" type="password" placeholder="Password"><br>
+<button onclick="login()">Login</button>
+<p id="err"></p>
+</div>
+</div>
+
+<!-- GAME -->
+<div id="game">
+
+<h2 id="dealer">👑 Dealer:</h2>
+<h3 id="timer">⏱️ 30</h3>
+<h3 id="money"></h3>
+<h2 id="dice">🎲 🎲 🎲</h2>
+
+<!-- BOARD -->
+<div id="board">
+<div class="cell" onclick="bet('Bầu')">Bầu</div>
+<div class="cell" onclick="bet('Cua')">Cua</div>
+<div class="cell" onclick="bet('Tôm')">Tôm</div>
+<div class="cell" onclick="bet('Cá')">Cá</div>
+<div class="cell" onclick="bet('Nai')">Nai</div>
+<div class="cell" onclick="bet('Gà')">Gà</div>
+</div>
+
+<!-- ADMIN -->
+<div id="adminPanel" class="panel" style="display:none;">
+<h3>👑 Admin</h3>
+<input id="adminResult" placeholder="Bầu,Cua,Tôm">
+<button onclick="setResult()">Set</button>
+<p id="preview"></p>
+</div>
+
+<!-- BANKER -->
+<div id="bankerPanel" class="panel" style="display:none;">
+<h3>💰 Banker</h3>
+<input id="user"><input id="chip">
+<button onclick="add()">+</button>
+<button onclick="sub()">-</button>
+
+<h4>Chọn Dealer</h4>
+<div id="userList"></div>
+</div>
+
+<!-- DEALER -->
+<div id="dealerPanel" class="panel" style="display:none;">
+<h3>🏦 Dealer</h3>
+<input id="min"><input id="max">
+<button onclick="setLimit()">Set cược</button>
+<button onclick="openResult()">Mở kết quả</button>
+</div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket=io();
+
+function login(){
+socket.emit("login",{username:username.value,password:password.value});
+}
+
+socket.on("login_success",(d)=>{
+login.style.display="none";
+game.style.display="block";
+
+if(d.role==="admin") adminPanel.style.display="block";
+if(d.role==="banker") bankerPanel.style.display="block";
+if(d.role==="dealer") dealerPanel.style.display="block";
+});
+
+socket.on("users",(u)=>{
+let html="";
+for(let id in u){
+html+=u[id].username+
+` <button onclick="setDealer('${u[id].username}')">Chọn</button><br>`;
+}
+userList.innerHTML=html;
+
+let me=u[socket.id];
+if(me) money.innerText="💰 "+me.money;
+});
+
+socket.on("dealer",(d)=>{
+dealer.innerText="👑 Dealer: "+d;
+});
+
+socket.on("countdown",(t)=>{
+timer.innerText="⏱️ "+t;
+});
+
+socket.on("dice_result",(r)=>{
+dice.innerText=r;
+});
+
+socket.on("admin_result",(r)=>{
+if(r) preview.innerText="🎯 "+r.join(" - ");
+});
+
+function bet(item){
+let amount=100;
+socket.emit("bet",{item,amount});
+}
+
+function setDealer(n){socket.emit("set_dealer",n);}
+function setResult(){socket.emit("admin_set",adminResult.value);}
+function add(){socket.emit("add_chip",{user:user.value,chip:+chip.value});}
+function sub(){socket.emit("sub_chip",{user:user.value,chip:+chip.value});}
+function setLimit(){socket.emit("set_limit",{min:+min.value,max:+max.value});}
+function openResult(){socket.emit("open_result");}
+</script>
+
+</body>
+</html>

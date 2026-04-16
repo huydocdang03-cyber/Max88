@@ -1,0 +1,22 @@
+let betAmount = 100;
+
+function setBet(amount){
+    betAmount = amount;
+}
+
+// hiệu ứng xúc xắc
+function animateDice(result, element){
+    let i = 0;
+    let interval = setInterval(()=>{
+        element.innerText = "🎲 " +
+        Math.floor(Math.random()*6+1)+" - "+
+        Math.floor(Math.random()*6+1)+" - "+
+        Math.floor(Math.random()*6+1);
+
+        i++;
+        if(i>10){
+            clearInterval(interval);
+            element.innerText = "🎲 " + result;
+        }
+    },100);
+}
